@@ -8,22 +8,11 @@ const app = express();
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
 
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+// app.use(express.static(path.join(__dirname, 'public')));
 
-
-// API routes
-app.get("/api/hello", (req, res) => {
-  res.send("Hello API");
-});
-
-// 🔥 IMPORTANT: handle root
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
-});
-
-// 🔥 IMPORTANT: SPA fallback (optional but recommended)
-app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
+// ✅ simple test route (important for debugging)
+app.get('/api/health', (req, res) => {
+    res.json({ status: 'ok' });
 });
 
 // API: Get all products
