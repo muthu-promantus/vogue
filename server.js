@@ -15,6 +15,9 @@ app.get('/api/health', (req, res) => {
     res.json({ status: 'ok' });
 });
 
+app.get("/", (req, res) => {
+    res.send("ROOT HIT EXPRESS");
+});
 // API: Get all products
 app.get('/api/products', async (req, res) => {
     const { data, error } = await supabase
