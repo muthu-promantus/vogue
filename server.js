@@ -65,4 +65,9 @@ app.get('/api/sales/today', (req, res) => {
     });
 });
 
-app.listen(3000, () => console.log('Server running on http://localhost:3000'));
+// At the bottom of server.js
+if (process.env.NODE_ENV !== 'production') {
+    app.listen(3000, () => console.log('Running on http://localhost:3000'));
+}
+
+module.exports = app;
