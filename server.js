@@ -1,84 +1,65 @@
+require('dotenv').config();
 const express = require('express');
-const sqlite3 = require('sqlite3').verbose();
+const { createClient } = require('@supabase/supabase-js');
 const path = require('path');
+
 const app = express();
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
 
 app.use(express.json());
-app.use(express.static('public'));
-
-// Database Setup
-const db = new sqlite3.Database('./boutique.db', (err) => {
-    if (err) console.error(err.message);
-    console.log('Connected to SQLite database.');
-});
-
-// Create Tables
-db.serialize(() => {
-    db.run(`CREATE TABLE IF NOT EXISTS products (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        price REAL NOT NULL,
-        stock INTEGER NOT NULL
-    )`);
-    db.run(`CREATE TABLE IF NOT EXISTS sales (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        date TEXT DEFAULT CURRENT_TIMESTAMP,
-        total_amount REAL
-    )`);
-});
-
-// This tells Express that anything in 'public' should be served directly
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Explicitly serve index.html for the home route
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+// API: Get all products
+app.get('/api/products', async (req, res) => {
+    const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .order('id', { ascending: true });
+    
+    if (error) return res.status(500).json(error);
+    res.json(data);
 });
 
-// API Routes
-app.get('/api/products', (req, res) => {
-    db.all("SELECT * FROM products", [], (err, rows) => res.json(rows));
-});
-
-app.post('/api/products', (req, res) => {
+// API: Add new product
+app.post('/api/products', async (req, res) => {
     const { name, price, stock } = req.body;
-    db.run("INSERT INTO products (name, price, stock) VALUES (?, ?, ?)", [name, price, stock], function(err) {
-        res.json({ id: this.lastID });
-    });
+    const { data, error } = await supabase
+        .from('products')
+        .insert([{ name, price, stock }])
+        .select();
+
+    if (error) return res.status(500).json(error);
+    res.json({ id: data[0].id });
 });
 
+// API: Checkout (Update stock and log sale)
 app.delete('/api/products/:id', (req, res) => {
     db.run("DELETE FROM products WHERE id = ?", req.params.id, () => res.sendStatus(200));
 });
 
-app.post('/api/checkout', (req, res) => {
+app.post('/api/checkout', async (req, res) => {
     const { items, total } = req.body;
-    
-    db.serialize(() => {
-        db.run("BEGIN TRANSACTION");
-        items.forEach(item => {
-            db.run("UPDATE products SET stock = stock - ? WHERE id = ?", [item.quantity, item.id]);
-        });
-        db.run("INSERT INTO sales (total_amount) VALUES (?)", [total]);
-        db.run("COMMIT", (err) => {
-            if (err) return res.status(500).send("Transaction failed");
-            res.json({ success: true });
-        });
-    });
+
+    try {
+        // 1. Update stock for each item
+        for (const item of items) {
+            const { error: stockError } = await supabase
+                .rpc('decrement_stock', { row_id: item.id, qty: item.quantity });
+            
+            if (stockError) throw stockError;
+        }
+
+        // 2. Record the sale
+        const { error: saleError } = await supabase
+            .from('sales')
+            .insert([{ total_amount: total }]);
+
+        if (saleError) throw saleError;
+
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
-app.get('/api/sales/today', (req, res) => {
-    db.get("SELECT SUM(total_amount) as dailyTotal FROM sales WHERE date >= date('now')", (err, row) => {
-        res.json(row || { dailyTotal: 0 });
-    });
-});
-
-// At the bottom of server.js
-// Remove or wrap your app.listen
-if (process.env.NODE_ENV !== 'production') {
-    const PORT = 3000;
-    app.listen(PORT, () => console.log(`Local dev: http://localhost:${PORT}`));
-}
-
-// THIS IS THE KEY FOR VERCEL
 module.exports = app;
