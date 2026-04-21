@@ -1,4 +1,5 @@
 require('dotenv').config();
+
 const express = require('express');
 const { createClient } = require('@supabase/supabase-js');
 const path = require('path');
@@ -61,5 +62,30 @@ app.post('/api/checkout', async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
+
+app.get('/api/sales/today', async (req, res) => {
+    try {
+        const { data, error } = await supabase
+        .from('sales')
+        .select('total_amount')
+        .gte('created_at', new Date().toISOString().split('T')[0]); // today
+
+        if (error) throw error;
+
+        const dailyTotal = data.reduce(
+        (sum, row) => sum + Number(row.total_amount || 0),
+        0
+        );
+
+        res.json({ dailyTotal });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+if (process.env.NODE_ENV !== 'production') {
+    const PORT = 3000;
+    app.listen(PORT, () => console.log(`Local dev: http://localhost:${PORT}`));
+}
 
 module.exports = app;
