@@ -66,8 +66,11 @@ app.get('/api/sales/today', (req, res) => {
 });
 
 // At the bottom of server.js
+// Remove or wrap your app.listen
 if (process.env.NODE_ENV !== 'production') {
-    app.listen(3000, () => console.log('Running on http://localhost:3000'));
+    const PORT = 3000;
+    app.listen(PORT, () => console.log(`Local dev: http://localhost:${PORT}`));
 }
 
+// THIS IS THE KEY FOR VERCEL
 module.exports = app;
