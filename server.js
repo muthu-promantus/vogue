@@ -27,6 +27,14 @@ db.serialize(() => {
     )`);
 });
 
+// This tells Express that anything in 'public' should be served directly
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Explicitly serve index.html for the home route
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
 // API Routes
 app.get('/api/products', (req, res) => {
     db.all("SELECT * FROM products", [], (err, rows) => res.json(rows));
