@@ -91,6 +91,31 @@ app.get('/api/sales/today', async (req, res) => {
     }
 });
 
+app.get('/api/sales/all', async (req, res) => {
+    try {
+        // Fetch id, amount, and date for all sales
+        const { data: sales, error } = await supabase
+            .from('sales')
+            .select('id, total_amount, created_at')
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        // Calculate today's total specifically for the dashboard cards
+        const today = new Date().toISOString().split('T')[0];
+        const dailyTotal = sales
+            .filter(sale => sale.created_at.startsWith(today))
+            .reduce((sum, row) => sum + Number(row.total_amount || 0), 0);
+
+        res.json({ 
+            dailyTotal, 
+            history: sales 
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // ✅ Then frontend routes
 app.get("/", (req, res) => {
     res.sendFile(path.join(__dirname, "public", "index.html"));
