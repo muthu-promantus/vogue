@@ -8,7 +8,7 @@ const app = express();
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
 
 app.use(express.json());
-// app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public')));
 
 // ✅ simple test route (important for debugging)
 app.get('/api/health', (req, res) => {
@@ -89,6 +89,16 @@ app.get('/api/sales/today', async (req, res) => {
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
+});
+
+// ✅ Then frontend routes
+app.get("/", (req, res) => {
+    res.sendFile(path.join(__dirname, "public", "index.html"));
+});
+
+// ✅ Catch-all (important: keep LAST)
+app.get("*", (req, res) => {
+    res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
 if (process.env.NODE_ENV !== 'production') {
