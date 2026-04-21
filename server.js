@@ -8,7 +8,12 @@ const app = express();
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
 
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+// app.use(express.static(path.join(__dirname, 'public')));
+
+// ✅ simple test route (important for debugging)
+app.get('/api/health', (req, res) => {
+    res.json({ status: 'ok' });
+});
 
 // API: Get all products
 app.get('/api/products', async (req, res) => {
