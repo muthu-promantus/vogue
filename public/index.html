@@ -328,9 +328,9 @@
             const sales = await sRes.json();
             const overallSales = await saRes.json();
             const revenue = (sales.dailyTotal || 0).toFixed(2);
-            const overallRevenue = overallSales.history
-                                    .reduce((sum, sale) => sum + (sale.total_amount || 0), 0)
-                                    .toFixed(2);
+            const overallRevenue = (overallSales.history || [])
+                                            .reduce((sum, sale) => sum + (sale.total_amount || 0), 0)
+                                            .toFixed(2);
 
             document.getElementById('dashTotal').innerText = `$${overallRevenue}`;
             document.getElementById('sidebarTotal').innerText = `$${revenue}`;
