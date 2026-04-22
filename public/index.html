@@ -328,8 +328,11 @@
             const sales = await sRes.json();
             const overallSales = await saRes.json();
             const revenue = (sales.dailyTotal || 0).toFixed(2);
-            
-            document.getElementById('dashTotal').innerText = `$${revenue}`;
+            const overallRevenue = overallSales.history
+                                    .reduce((sum, sale) => sum + (sale.total_amount || 0), 0)
+                                    .toFixed(2);
+
+            document.getElementById('dashTotal').innerText = `$${overallRevenue}`;
             document.getElementById('sidebarTotal').innerText = `$${revenue}`;
             document.getElementById('dashItems').innerText = products.length;
             document.getElementById('dashAlerts').innerText = products.filter(p => p.stock < 5).length;
